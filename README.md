@@ -1,5 +1,5 @@
 # HybridDIA
-HybridDIA is a new pethod thatcombines simultaneous targeted and discovery (DIA) proteomics methods. HybridDIA is based on an Application Programming Interface, which enables the ability to combine trgeted and discovery proteomics by intercalating DIA scans with accurate triggering of predefined peptide targets.
+HybridDIA is a new acquisition method that combines simultaneous targeted and discovery (DIA) proteomics strategies. HybridDIA is based on an Application Programming Interface, which enables the ability to combine targeted and discovery proteomics by intercalating DIA scans with accurate triggering of predefined peptide targets.
 
 The pipeline to analyze HybridDIA files is comprised of three steps:
 1. Extract MSx Scans from the raw file.
