@@ -7,3 +7,5 @@ The pipeline to analyze HybridDIA files is comprised of three steps:
 3. Injection Time based intensity correction and data visualization.
 
 You can find a complete guide in: [Guide](./Guide_v1.0.pdf)
+
+![Image Pipeline](./other/Panel_DataAnalysis_Pipeline.png)
