@@ -6,4 +6,4 @@ The pipeline to analyze HybridDIA files is comprised of three steps:
 2. Upload to [Skyline](https://skyline.ms/project/home/software/Skyline/begin.view) to extract the Fragment Intensities of the Heavy (Internal Standard or IS) and Light (Endogeneous or ENDO) peptides.
 3. Injection Time based intensity correction and data visualization.
 
-You can find a complete guide in: [Guide]("anamdv/HybridDIA/Guide_v1.0.pdf")
+You can find a complete guide in: [Guide]("Guide_v1.0.pdf")
