@@ -1,0 +1,5 @@
+default:
+  parameter:
+    ppm: 10
+    n_y: 1
+    ppfr: 0.5

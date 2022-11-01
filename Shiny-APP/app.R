@@ -1,6 +1,7 @@
 ### 02-05-2022 Update AUC calculation method to default (trapezoid rule)
 ### 02-05-2022 Update PPFR filter >= 0.5
 ### 23-05-2022 Update to inlcude the possibility to plot abosulte ratio L/H
+### 17-10-2022 V5 Update, include a config.yml file to indicate the ppm mass error, peptide peak found ratio and min number of fragments to use for quant
 options(connectionObserver = NULL)
 library(shiny)
 library(shinyFiles)
@@ -13,6 +14,14 @@ require(gridExtra)
 library(tidyr)
 library(ggpubr)
 library(MESS)
+library(config)
+
+dw <- get("parameter")
+ppm = dw$ppm
+n_y = dw$n_y
+ppfr = dw$ppfr
+
+
 
 ui <- fluidPage(
 
@@ -53,7 +62,7 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
-		options(shiny.maxRequestSize=30*1024^2)
+		options(shiny.maxRequestSize=90*1024^2)
 #FUNCTIONS USED IN THE APP:
 #read_sample_table (FUN): reads and process the txt files containing the ITs.		
 		read_sample_table<-function(reg_ex,dir_IT, IS, samples){
@@ -129,7 +138,10 @@ server <- function(input, output, session) {
 				areas_h<-c(areas_h, auc(rt_h, int_h_norm)) #areas_h: area of the corrected IS peak for each fragment, and added into a vector that will contain the intensities for all fragment areas.
 				areas_l<-c(areas_l, auc(rt_l, int_l_norm)) #areas_l: area of the corrected ENDO peak for each fragment. (...)
 			}
-				ratio_lh<-sum(areas_l)/sum(areas_h)
+			if(length(areas_l)<n_y) {
+			  ratio_lh<-NA
+			} else {
+			  ratio_lh<-sum(areas_l)/sum(areas_h)}
 				return(ratio_lh)
 		}
 #int_calculator (FUN): return the full AUC for the ENDO and IS peptides.		
@@ -165,8 +177,13 @@ server <- function(input, output, session) {
 				areas_h<-c(areas_h, auc(rt_h, int_h_norm)) #areas_h: area of the corrected IS peak for each fragment, and added into a vector that will contain the intensities for all fragment areas.
 				areas_l<-c(areas_l, auc(rt_l, int_l_norm)) #areas_l: area of the corrected ENDO peak for each fragment. (...)
 			}
-				areas_l_all<-sum(areas_l)
+				if(length(areas_l)<n_y){
+				  areas_l_all<-NA
+				  areas_h_all<-NA
+				} else {
+			  areas_l_all<-sum(areas_l)
 				areas_h_all<-sum(areas_h)
+				}
 				return(list(areas_l_all, areas_h_all))
 		}
 #ppm_filter (FUN): remove fragments with mass error > 10 ppm
@@ -180,7 +197,7 @@ server <- function(input, output, session) {
 				}
 			}
 			
-			x<-quant[quant$Mass.Error.PPM >10,]
+			x<-quant[quant$Mass.Error.PPM >ppm,]
 			if(nrow(x) !=0){
 				for(i in 1:nrow(x)){
 				  quant<-quant[!(quant$Protein == x$Protein[i] & quant$Replicate == x$Replicate[i] & quant$Fragment.Ion == x$Fragment.Ion[i]),]
@@ -195,8 +212,8 @@ server <- function(input, output, session) {
 			# t contains the Raw intensities, Raw elution times and fragment ions (light and heavy) for the corresponding sample
 			t<-t_full[t_full$Replicate==samples,]
 			t<-t[t$Fragment.Ion!="precursor",]
-			t<-t[t$Peptide.Peak.Found.Ratio >=0.5,]
-			#t<-ppm_filter(t)
+			t<-t[t$Peptide.Peak.Found.Ratio >=ppfr,]
+			t<-ppm_filter(t)
 			sub_t<-t[t$Protein==site,] #subset of t with a specific site
 			sub_p<-p[p$Site==site,]
 			sub_p<-na.omit(sub_p)#subset of p with a specific site
@@ -274,8 +291,8 @@ server <- function(input, output, session) {
 				# t contains the Raw intensities, Raw elution times and fragment ions (light and heavy) for the corresponding sample
 				t<-t_full[t_full$Replicate==samples[k],]
 				t<-t[t$Fragment.Ion!="precursor",]
-				t<-t[t$Peptide.Peak.Found.Ratio >=0.5,]
-				#t<-ppm_filter(t)
+				t<-t[t$Peptide.Peak.Found.Ratio >=ppfr,]
+				t<-ppm_filter(t)
 				t$Protein<-as.factor(t$Protein)
 				sites<-levels(droplevels(t$Protein))
 				for (j in 1:length(sites)){
@@ -299,7 +316,6 @@ server <- function(input, output, session) {
 			results_melt$replicate<-gsub(".*bef_0", "",results_melt$variable)
 			results_melt$gene<-gsub(":.*", "",results_melt$Site)
 			results_melt$psite<-gsub(".*:", "",results_melt$Site)
-			
 			order<-hclust(dist(apply(results_scaled[,2:ncol(results_scaled)],2, as.numeric)))$order
 			results_melt$Site<-factor(x=results_melt$Site, levels=results$Site[order], ordered=T)
 			
@@ -323,8 +339,8 @@ server <- function(input, output, session) {
 				# t contains the Raw intensities, Raw elution times and fragment ions (light and heavy) for the corresponding sample
 				t<-t_full[t_full$Replicate==samples[k],]
 				t<-t[t$Fragment.Ion!="precursor",]
-				t<-t[t$Peptide.Peak.Found.Ratio >=0.5,]
-				#t<-ppm_filter(t)
+				t<-t[t$Peptide.Peak.Found.Ratio >=ppfr,]
+				t<-ppm_filter(t)
 				t$Protein<-as.factor(t$Protein)
 				sites<-levels(droplevels(t$Protein))
 				for (j in 1:length(sites)){
@@ -348,7 +364,6 @@ server <- function(input, output, session) {
 			results_melt$replicate<-gsub(".*bef_0", "",results_melt$variable)
 			results_melt$gene<-gsub(":.*", "",results_melt$Site)
 			results_melt$psite<-gsub(".*:", "",results_melt$Site)
-			
 			order<-hclust(dist(apply(results[,2:ncol(results)],2, as.numeric)))$order
 			results_melt$Site<-factor(x=results_melt$Site, levels=results$Site[order], ordered=T)
 			
@@ -374,8 +389,8 @@ server <- function(input, output, session) {
 				t<-t_full[t_full$Replicate==samples[k],]
 				t$Protein<-as.factor(t$Protein)
 				t<-t[t$Fragment.Ion!="precursor",]
-				t<-t[t$Peptide.Peak.Found.Ratio >=0.5,]
-				#t<-ppm_filter(t)
+				t<-t[t$Peptide.Peak.Found.Ratio >=ppfr,]
+				t<-ppm_filter(t)
 				sites<-levels(droplevels(t$Protein))
 				for (j in 1:length(sites)){
 					sub_t<-t[t$Protein==sites[j],] #subset of t with a specific site
@@ -403,8 +418,8 @@ server <- function(input, output, session) {
 				# t contains the Raw intensities, Raw elution times and fragment ions (light and heavy) for the corresponding sample
 				t<-t_full[t_full$Replicate==samples[k],]
 				t<-t[t$Fragment.Ion!="precursor",]
-				t<-t[t$Peptide.Peak.Found.Ratio >=0.5,]
-				#t<-ppm_filter(t)
+				t<-t[t$Peptide.Peak.Found.Ratio >=ppfr,]
+				t<-ppm_filter(t)
 				sub_t<-t[t$Protein==phos_site,] #subset of t with a specific site
 				sub_p<-p[p$Site==phos_site,]
 				sub_p<-na.omit(sub_p)#subset of p with a specific site
@@ -420,8 +435,10 @@ server <- function(input, output, session) {
 			results_melt<-melt(results_scaled)
 			results_melt$sample<-gsub("_0.05.*", "",results_melt$variable)
 			results_melt$replicate<-gsub("_EGFR.KRAS_.*", "",results_melt$variable)
+			results_melt$replicate<-gsub("_0.*", "",results_melt$variable)
 			results_melt$gene<-gsub(":.*", "",results_melt$Site)
 			results_melt$psite<-gsub(".*:", "",results_melt$Site)
+			#results_melt$replicate<-factor(results_melt$replicate, levels=c("X0h", "X1h", "X3h", "X6h", "X12h", "X24h"))
 			line_plot<-ggline(results_melt[results_melt$Site==phos_site,], x="replicate", y="value", add=c("mean_se", "jitter"), color="psite")+
 					theme(text = element_text(size=10),axis.text.x = element_text(angle=90, hjust=1))
 			line_plot
@@ -438,8 +455,8 @@ server <- function(input, output, session) {
 				# t contains the Raw intensities, Raw elution times and fragment ions (light and heavy) for the corresponding sample
 				t<-t_full[t_full$Replicate==samples[k],]
 				t<-t[t$Fragment.Ion!="precursor",]
-				t<-t[t$Peptide.Peak.Found.Ratio >=0.5,]
-				#t<-ppm_filter(t)
+				t<-t[t$Peptide.Peak.Found.Ratio >=ppfr,]
+				t<-ppm_filter(t)
 				sub_t<-t[t$Protein==phos_site,] #subset of t with a specific site
 				sub_p<-p[p$Site==phos_site,]
 				sub_p<-na.omit(sub_p)#subset of p with a specific site
@@ -454,9 +471,11 @@ server <- function(input, output, session) {
 			#results_scaled[is.na(results_scaled)] <- 0
 			results_melt<-melt(results)
 			results_melt$sample<-gsub("_0.05.*", "",results_melt$variable)
-			results_melt$replicate<-gsub("_EGFR.KRAS_.*", "",results_melt$variable)
+			#results_melt$replicate<-gsub("_EGFR.KRAS_.*", "",results_melt$variable)
+			results_melt$replicate<-gsub("_0.*", "",results_melt$variable)
 			results_melt$gene<-gsub(":.*", "",results_melt$Site)
 			results_melt$psite<-gsub(".*:", "",results_melt$Site)
+			results_melt$replicate<-factor(results_melt$replicate, levels=c("X0h", "X1h", "X3h", "X6h", "X12h", "X24h"))
 			line_plot<-ggline(results_melt[results_melt$Site==phos_site,], x="replicate", y="value", add=c("mean_se", "jitter"), color="psite")+
 					theme(text = element_text(size=10),axis.text.x = element_text(angle=90, hjust=1))
 			line_plot
@@ -466,7 +485,7 @@ server <- function(input, output, session) {
 					inFile <- input$t_full
 					if (is.null(inFile))
 						return(NULL)
-					quant_table<-read.csv(inFile$datapath, head=T, sep=",")
+					quant_table<-read.csv(inFile$datapath, head=T, sep=",", colClasses = c(Replicate="character"))
 					selectInput("samples", "Select Replicate", choices=levels(as.factor(quant_table$Replicate)))
 					})
 
@@ -474,7 +493,7 @@ server <- function(input, output, session) {
 					inFile_2 <- input$t_full
 					if (is.null(inFile_2))
 						return(NULL)
-					quant_table<-read.csv(inFile_2$datapath, head=T, sep=",")
+					quant_table<-read.csv(inFile_2$datapath, head=T, sep=",", colClasses = c(Replicate="character"))
 					selectInput("sites", "Select Phospho-site", choices=levels(as.factor(quant_table$Protein)))
 					})
 					
@@ -498,7 +517,7 @@ server <- function(input, output, session) {
 
 		x <- eventReactive(input$goButton, {
 											inFile_3 <- input$t_full
-											quant_table<-read.csv(inFile_3$datapath, head=T, sep=",")
+											quant_table<-read.csv(inFile_3$datapath, head=T, sep=",", colClasses = c(Replicate="character"))
 											inFile_4 <- input$IS
 											precursor_list<-read.csv(inFile_4$datapath, head=T, sep=",")
 											site<-input$sites
@@ -511,7 +530,7 @@ server <- function(input, output, session) {
 							)
 		y <- eventReactive(input$goButton, {
 											inFile_3 <- input$t_full
-											quant_table<-read.csv(inFile_3$datapath, head=T, sep=",")
+											quant_table<-read.csv(inFile_3$datapath, head=T, sep=",",colClasses = c(Replicate="character"))
 											inFile_4 <- input$IS
 											precursor_list<-read.csv(inFile_4$datapath, head=T, sep=",")
 											site<-input$sites
@@ -525,7 +544,7 @@ server <- function(input, output, session) {
 							)
 		z <- eventReactive(input$go2Button, {
 											inFile_3 <- input$t_full
-											quant_table<-read.csv(inFile_3$datapath, head=T, sep=",")
+											quant_table<-read.csv(inFile_3$datapath, head=T, sep=",",colClasses = c(Replicate="character"))
 											inFile_4 <- input$IS
 											precursor_list<-read.csv(inFile_4$datapath, head=T, sep=",")
 											site<-input$sites
@@ -539,7 +558,7 @@ server <- function(input, output, session) {
 							)
 		data_l <- reactive( {
 							inFile_3 <- input$t_full
-							quant_table<-read.csv(inFile_3$datapath, head=T, sep=",")
+							quant_table<-read.csv(inFile_3$datapath, head=T, sep=",",colClasses = c(Replicate="character"))
 							inFile_4 <- input$IS
 							precursor_list<-read.csv(inFile_4$datapath, head=T, sep=",")
 							site<-input$sites
@@ -552,7 +571,7 @@ server <- function(input, output, session) {
 							)
 		data_h <- reactive( {
 							inFile_3 <- input$t_full
-							quant_table<-read.csv(inFile_3$datapath, head=T, sep=",")
+							quant_table<-read.csv(inFile_3$datapath, head=T, sep=",",colClasses = c(Replicate="character"))
 							inFile_4 <- input$IS
 							precursor_list<-read.csv(inFile_4$datapath, head=T, sep=",")
 							site<-input$sites
