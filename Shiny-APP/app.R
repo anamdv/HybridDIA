@@ -475,7 +475,7 @@ server <- function(input, output, session) {
 			results_melt$replicate<-gsub("_0.*", "",results_melt$variable)
 			results_melt$gene<-gsub(":.*", "",results_melt$Site)
 			results_melt$psite<-gsub(".*:", "",results_melt$Site)
-			results_melt$replicate<-factor(results_melt$replicate, levels=c("X0h", "X1h", "X3h", "X6h", "X12h", "X24h"))
+			#results_melt$replicate<-factor(results_melt$replicate, levels=c("X0h", "X1h", "X3h", "X6h", "X12h", "X24h"))
 			line_plot<-ggline(results_melt[results_melt$Site==phos_site,], x="replicate", y="value", add=c("mean_se", "jitter"), color="psite")+
 					theme(text = element_text(size=10),axis.text.x = element_text(angle=90, hjust=1))
 			line_plot
