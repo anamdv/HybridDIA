@@ -9,3 +9,15 @@ The pipeline to analyze HybridDIA files is comprised of three steps:
 You can find a complete guide in: [Guide](./Guide_v03.pdf)
 
 ![Image Pipeline](./other/Panel_DataAnalysis_Pipeline.png)
+
+# System Requirements
+Any of the code required to run this pipeline requires an standard computer. 
+
+# Hardware Requirements
+This pipeline is supported and has been tested in Windows 10 systems.
+
+# Installation Requirements
+Information about recommended packages and software versions used in this pipeline are included in [Guide](./Guide_v03.pdf).
+
+# Demo data
+Demo files to execute the pipeline and expected outputs are avaialable: [Demo data] (./Example%20files)
