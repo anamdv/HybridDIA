@@ -20,4 +20,4 @@ This pipeline is supported and has been tested in Windows 10 systems.
 Information about recommended packages and software versions used in this pipeline are included in [Guide](./Guide_v03.pdf).
 
 # Demo data
-Demo files to execute the pipeline and expected outputs are avaialable: [Demo] (./Example%20files)
+Demo files to execute the pipeline and expected outputs are available: [Demo](./Example%20Files)
